@@ -68,7 +68,7 @@ public class Leaf {
         this.isRoot = isRoot;
     }
 
-    public static Leaf makeTree(Leaf[] leafArray){
+    public static Leaf[] makeTree(Leaf[] leafArray){
         Leaf[] tree = new Leaf[leafArray.length];
         Leaf previousLeaf = null;
         int startIndex = 2;
@@ -79,7 +79,8 @@ public class Leaf {
             Leaf leafNode = new Leaf(previousLeaf, leafArray[i], false);
             previousLeaf = leafNode;
         }
-        return previousLeaf;
+        tree[0] = previousLeaf;
+        return tree;
 
         /*take previousLeaf
                 take third item from leafArray
