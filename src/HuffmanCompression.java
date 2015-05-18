@@ -13,13 +13,51 @@ public class HuffmanCompression {
     public static void main(String[] args){
         Leaf[] leafArray;
         leafArray = createFreqTable("/Users/slus/Desktop/hello.txt");
-        printArray("Before Sort",leafArray);
+        SecretCode[] secretCodeArray = new SecretCode[leafArray.length];
+
+        printArray("Before Sort", leafArray);
         sortArray(leafArray);
         printArray("After Sort", leafArray);
-        printArray("LOL NODE", Leaf.makeTree(leafArray));
+
+        makeSecretCode(Leaf.makeTree(leafArray), secretCodeArray, 0);
     }
 
-    //Heap Sort. Most consisten O(n log(n))
+    private static void makeSecretCode(Leaf node, SecretCode[] secretCodeArray, int lastPosition) {
+        String goLeft = "0";
+        String goRight = "1";
+        SecretCode code = new SecretCode();
+        if(node.isRoot()){
+            code.setSymbol(node.getLeftLeaf().getSymbol());
+            code.setSecretCode(code.getSecretCode() + goLeft);
+            node.getRightLeaf().setBranchValueToParent(goRight);
+            secretCodeArray[lastPosition] = code;
+            lastPosition++;
+            makeSecretCode(node.getRightLeaf(), secretCodeArray, lastPosition);
+            System.out.println(code.toString());
+        }
+        else{
+            if(node.isNode){
+                code.setSymbol(node.getLeftLeaf().getSymbol());
+                code.setSecretCode(node.branchValueToParent + goLeft);
+                node.getRightLeaf().setBranchValueToParent(node.getBranchValueToParent() + goRight);
+                secretCodeArray[lastPosition] = code;
+                lastPosition++;
+                makeSecretCode(node.getRightLeaf(), secretCodeArray, lastPosition);
+                System.out.println(code.toString());
+            }
+            //NOT A NODE END OF TREE
+            else{
+                code.setSymbol(node.getSymbol());
+                code.setSecretCode(node.getBranchValueToParent() + goRight);
+                secretCodeArray[lastPosition] = code;
+                System.out.println(code.toString());
+
+            }
+        }
+
+    }
+
+    //Heap Sort. Most consistent O(n log(n))
     //FROM http://www.sanfoundry.com/java-program-implement-heap-sort/
     private static void sortArray(Leaf[] leafArray) {
         makeHeap(leafArray);

@@ -9,6 +9,7 @@ public class Leaf {
     Leaf rightLeaf;
     boolean isNode;
     boolean isRoot;
+    String branchValueToParent;
 
     public Leaf() {
         this.symbol = '\0';
@@ -18,6 +19,7 @@ public class Leaf {
         this.rightLeaf = null;
         this.isNode = false;
         this.isRoot = false;
+        this.branchValueToParent = "";
     }
 
     public Leaf(char symbol, int frequency, Leaf charNode){
@@ -28,7 +30,7 @@ public class Leaf {
         this.rightLeaf = null;
         this.isNode = false;
         this.isRoot = false;
-
+        this.branchValueToParent = "";
     }
 
     public Leaf(char symbol, int frequency){
@@ -39,7 +41,7 @@ public class Leaf {
         this.rightLeaf = null;
         this.isNode = false;
         this.isRoot = false;
-
+        this.branchValueToParent = "";
     }
 
     public Leaf(Leaf leaf1, Leaf leaf2, boolean isRoot){
@@ -68,7 +70,7 @@ public class Leaf {
         this.isRoot = isRoot;
     }
 
-    public static Leaf[] makeTree(Leaf[] leafArray){
+    public static Leaf makeTree(Leaf[] leafArray){
         Leaf[] tree = new Leaf[leafArray.length];
         Leaf previousLeaf = null;
         int startIndex = 2;
@@ -79,8 +81,8 @@ public class Leaf {
             Leaf leafNode = new Leaf(previousLeaf, leafArray[i], false);
             previousLeaf = leafNode;
         }
-        tree[0] = previousLeaf;
-        return tree;
+        previousLeaf.setIsRoot(true);
+        return previousLeaf;
 
         /*take previousLeaf
                 take third item from leafArray
@@ -135,5 +137,21 @@ public class Leaf {
 
     public void setIsNode(boolean isNode) {
         this.isNode = isNode;
+    }
+
+    public boolean isRoot() {
+        return isRoot;
+    }
+
+    public void setIsRoot(boolean isRoot) {
+        this.isRoot = isRoot;
+    }
+
+    public String getBranchValueToParent() {
+        return branchValueToParent;
+    }
+
+    public void setBranchValueToParent(String branchValueToParent) {
+        this.branchValueToParent = branchValueToParent;
     }
 }
