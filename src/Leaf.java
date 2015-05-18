@@ -65,8 +65,6 @@ public class Leaf {
                 rightLeaf = leaf1;
             }
         }
-
-
         this.isRoot = isRoot;
     }
 
@@ -83,12 +81,6 @@ public class Leaf {
         }
         previousLeaf.setIsRoot(true);
         return previousLeaf;
-
-        /*take previousLeaf
-                take third item from leafArray
-                make node
-                        previousLeaf = node
-                                until there is no more item in leafAr*/
     }
 
     public char getSymbol() {

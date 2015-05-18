@@ -1,4 +1,5 @@
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,17 +13,50 @@ public class HuffmanCompression {
 
     public static void main(String[] args){
         Leaf[] leafArray;
-        leafArray = createFreqTable("/Users/slus/Desktop/hello.txt");
+        String fileLocation = "/Users/slus/Desktop/";
+        String fileName = "hello.txt";
+        leafArray = createFreqTable(fileLocation+fileName);
         SecretCode[] secretCodeArray = new SecretCode[leafArray.length];
 
         printArray("Before Sort", leafArray);
         sortArray(leafArray);
         printArray("After Sort", leafArray);
-
-        makeSecretCode(Leaf.makeTree(leafArray), secretCodeArray, 0);
+        secretCodeArray = makeSecretCode(Leaf.makeTree(leafArray), secretCodeArray, 0);
+        compress(fileLocation, fileName, secretCodeArray);
     }
 
-    private static void makeSecretCode(Leaf node, SecretCode[] secretCodeArray, int lastPosition) {
+    private static void compress(String fileLocation, String fileName, SecretCode[] secretCodes) {
+        try {
+            FileInputStream inFile = new FileInputStream(fileLocation+fileName);
+            FileOutputStream outFile = new FileOutputStream(fileLocation + fileName + ".huf");
+            //Write SecretCode to header
+            for (int i = 0; i < secretCodes.length; i++){
+                String newLine = "";
+                newLine = secretCodes[i].getSecretCode();
+                outFile.write(Integer.toBinaryString((int)secretCodes[i].getSymbol()).getBytes());
+                outFile.write(newLine.getBytes());
+            }
+
+            //Convert Characters to secretCode
+            int characters;
+            SecretCode[] largeArray = new SecretCode[256];
+
+            for (int i = 0; i < secretCodes.length; i++){
+                largeArray[(int)secretCodes[i].getSymbol()] = secretCodes[i];
+            }
+
+            String toOutput = "";
+            while(( characters = inFile.read()) != -1) {
+                toOutput += largeArray[characters].getSecretCode();
+            }
+            //Write the text to the file
+            outFile.write(toOutput.getBytes());
+            }catch(IOException e){
+            e.printStackTrace();
+        }
+    }
+
+    private static SecretCode[] makeSecretCode(Leaf node, SecretCode[] secretCodeArray, int lastPosition) {
         String goLeft = "0";
         String goRight = "1";
         SecretCode code = new SecretCode();
@@ -33,7 +67,6 @@ public class HuffmanCompression {
             secretCodeArray[lastPosition] = code;
             lastPosition++;
             makeSecretCode(node.getRightLeaf(), secretCodeArray, lastPosition);
-            System.out.println(code.toString());
         }
         else{
             if(node.isNode){
@@ -43,18 +76,15 @@ public class HuffmanCompression {
                 secretCodeArray[lastPosition] = code;
                 lastPosition++;
                 makeSecretCode(node.getRightLeaf(), secretCodeArray, lastPosition);
-                System.out.println(code.toString());
             }
             //NOT A NODE END OF TREE
             else{
                 code.setSymbol(node.getSymbol());
                 code.setSecretCode(node.getBranchValueToParent() + goRight);
                 secretCodeArray[lastPosition] = code;
-                System.out.println(code.toString());
-
             }
         }
-
+        return secretCodeArray;
     }
 
     //Heap Sort. Most consistent O(n log(n))
@@ -67,7 +97,6 @@ public class HuffmanCompression {
             swapLargeElement(leafArray,0);
         }
     }
-
 
     public static void makeHeap(Leaf[] leafArray){
         length = leafArray.length-1;
@@ -113,7 +142,6 @@ public class HuffmanCompression {
     private static Leaf[] createFreqTable(String directory) {
         Leaf[] charArray = new Leaf[256];
         List<Integer> usedChar = new ArrayList<>();
-
         try{
             FileInputStream file = new FileInputStream(directory);
             int characters;
@@ -140,123 +168,6 @@ public class HuffmanCompression {
             betterCharArray[i] = charArray[usedChar.get(i)];
             betterCharArray[i] = charArray[usedChar.get(i)];
         }
-
         return betterCharArray;
     }
 }
-
-
-
-
-
-/*import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
-public class HuffmanCompression{
-    public static void main(String[] args){
-        char charTable[][] = new char[256][2];
-        List<Integer> usedChar = new ArrayList<>();
-        try{
-            FileInputStream file = new FileInputStream("/Users/slus/Desktop/hello.txt");
-            int characters;
-
-            //I guess this runs O(n) "Amount of characters in text"
-            while(( characters = file.read()) != -1) {
-                 char c = (char)characters;
-                 System.out.print(c);
-                 int charAscii = c;
-
-                 if(charAscii <= 256) {
-                     if (charTable[charAscii][0] == '\0') {
-                         charTable[charAscii][0] = c;
-                         charTable[charAscii][1] = '1';
-                         usedChar.add((int)c);
-                     } else {
-                         int frequency = charTable[charAscii][1];
-                         int newFrequency = frequency + 1;
-                         charTable[charAscii][1] = (char)newFrequency;
-                     }
-                 }
-             }
-
-            //Make new nonNullArray O(n)
-            char[][] newBetterArray = new char[usedChar.size()][2];
-            for(int i= 0; i <= usedChar.size()-1; i++){
-                newBetterArray[i][0] = charTable[usedChar.get(i)][0];
-                newBetterArray[i][1] = charTable[usedChar.get(i)][1];
-            }
-
-            System.out.println("AFTER SORT");
-
-            //O(n log(n))
-            sortTable(newBetterArray);
-
-            //O(n)
-            for (int i = 0; i <= newBetterArray.length-1; i++){
-                System.out.println(newBetterArray[i][0] + " " + newBetterArray[i][1]);
-            }
-
-            System.out.println("Amount of character in new Array " + newBetterArray.length);
-
-        }catch(IOException e){
-            e.printStackTrace();
-            System.out.println("The file you have requested does not exist");
-
-        }
-    }
-
-    private static int length;
-
-    //heap sort
-    //FROM http://www.sanfoundry.com/java-program-implement-heap-sort/
-    public static void sortTable(char[][] charTable){
-        makeHeap(charTable);
-        for(int i = length; i > 0; i--){
-            swapValues(charTable,0, i);
-            length -= 1;
-            swapLargeElement(charTable,0);
-        }
-    }
-
-
-    public static void makeHeap(char[][] charTable){
-        length = charTable.length-1;
-        for (int i = length/2; i >= 0; i--){
-            swapLargeElement(charTable, i);
-        }
-    }
-
-    private static void swapLargeElement(char[][] charTable, int i) {
-        int leftValue = 2*i;
-        int rightValue = 2*i + 1;
-        int maxValue = i;
-
-        if(leftValue <= length && charTable[leftValue][1] > charTable[i][1]){
-            maxValue = leftValue;
-        }
-        if(rightValue <= length && charTable[rightValue][1] > charTable[maxValue][1]){
-            maxValue = rightValue;
-        }
-
-        if(maxValue != i){
-            swapValues(charTable, i, maxValue);
-            swapLargeElement(charTable, maxValue);
-        }
-    }
-
-    private static void swapValues(char[][] charTable, int i, int maxValue) {
-        int tempValue = charTable[i][1];
-        char tempChar = charTable[i][0];
-        charTable[i][1] = charTable[maxValue][1];
-        charTable[i][0] = charTable[maxValue][0];
-        charTable[maxValue][1] = (char)tempValue;
-        charTable[maxValue][0] = tempChar;
-    }
-
-    private static void makeBinaryTree(char[][] array){
-
-    }
-}*/
