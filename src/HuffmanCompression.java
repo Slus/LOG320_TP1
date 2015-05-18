@@ -16,7 +16,7 @@ public class HuffmanCompression {
         printArray("Before Sort",leafArray);
         sortArray(leafArray);
         printArray("After Sort", leafArray);
-        printArray("LOL NODE", Leaf.makeTree(leafArray));
+        //printArray("LOL NODE", Leaf.makeTree(leafArray));
     }
 
     //Heap Sort. Most consisten O(n log(n))

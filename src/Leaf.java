@@ -46,37 +46,46 @@ public class Leaf {
         this.isNode = true;
         this.frequency = leaf1.getFrequency() + leaf2.getFrequency();
         this.symbol = '\0';
-        if((int)leaf1.getSymbol() >= (int)leaf2.getSymbol()){
-            leftLeaf = leaf1;
-            rightLeaf = leaf2;
-        }
-        else {
-            leftLeaf = leaf2;
+
+        if(leaf1.getSymbol() == '\0'){
+            leaf1.setParentNode(this);
+            leaf2.setParentNode(this);
             rightLeaf = leaf1;
+            leftLeaf = leaf2;
         }
+        else{
+            if((int)leaf1.getSymbol() >= (int)leaf2.getSymbol()){
+                leftLeaf = leaf2;
+                rightLeaf = leaf1;
+            }
+            else {
+                leftLeaf = leaf2;
+                rightLeaf = leaf1;
+            }
+        }
+
+
         this.isRoot = isRoot;
     }
 
-    public static Leaf[] makeTree(Leaf[] leafArray){
+    public static Leaf makeTree(Leaf[] leafArray){
         Leaf[] tree = new Leaf[leafArray.length];
         Leaf previousLeaf = null;
-        int lastIndex = 1;
-        for(int i = 0; i < leafArray.length; i++){
-            if(tree[0] == null){
-                Leaf leafNode = new Leaf(leafArray[0], leafArray[1], false);
-                tree[i] = leafNode;
-                previousLeaf = leafNode;
-            }
-            else{
-                Leaf leafNode = new Leaf(previousLeaf, leafArray[lastIndex], false);
-                lastIndex++;
-                tree[i] = leafNode;
-            }
+        int startIndex = 2;
+        Leaf firstLeafNode = new Leaf(leafArray[0], leafArray[1], false);
+        previousLeaf = firstLeafNode;
 
-
-
+        for(int i = 2; i < leafArray.length; i++){
+            Leaf leafNode = new Leaf(previousLeaf, leafArray[i], false);
+            previousLeaf = leafNode;
         }
-        return tree;
+        return previousLeaf;
+
+        /*take previousLeaf
+                take third item from leafArray
+                make node
+                        previousLeaf = node
+                                until there is no more item in leafAr*/
     }
 
     public char getSymbol() {
