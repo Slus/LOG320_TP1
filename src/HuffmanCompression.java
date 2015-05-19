@@ -29,28 +29,19 @@ public class HuffmanCompression {
         try {
             FileInputStream inFile = new FileInputStream(fileLocation+fileName);
             FileOutputStream outFile = new FileOutputStream(fileLocation + fileName + ".huf");
+
             //Write SecretCode to header
-            for (int i = 0; i < secretCodes.length; i++){
-                String newLine = "";
-                newLine = secretCodes[i].getSecretCode();
-                outFile.write(Integer.toBinaryString((int)secretCodes[i].getSymbol()).getBytes());
-                outFile.write(newLine.getBytes());
+            for (int i = 0; i < secretCodes.length; i++) {
+                int secretCodeLength = secretCodes[i].getSecretCode().length();
+                char[] charArray;
+                charArray = secretCodes[i].getSecretCode().toCharArray();
+                for (int j= 0; j < secretCodeLength; j++){
+                    //outFile.write((byte)charArray[j]);
+                    outFile.write(Integer.bitCount(1));
+                }
+
             }
 
-            //Convert Characters to secretCode
-            int characters;
-            SecretCode[] largeArray = new SecretCode[256];
-
-            for (int i = 0; i < secretCodes.length; i++){
-                largeArray[(int)secretCodes[i].getSymbol()] = secretCodes[i];
-            }
-
-            String toOutput = "";
-            while(( characters = inFile.read()) != -1) {
-                toOutput += largeArray[characters].getSecretCode();
-            }
-            //Write the text to the file
-            outFile.write(toOutput.getBytes());
             }catch(IOException e){
             e.printStackTrace();
         }
@@ -63,7 +54,9 @@ public class HuffmanCompression {
         if(node.isRoot()){
             code.setSymbol(node.getLeftLeaf().getSymbol());
             code.setSecretCode(code.getSecretCode() + goLeft);
-            node.getRightLeaf().setBranchValueToParent(goRight);
+            if(node.getRightLeaf().isNode){
+                node.getRightLeaf().setBranchValueToParent(goRight);
+            }
             secretCodeArray[lastPosition] = code;
             lastPosition++;
             makeSecretCode(node.getRightLeaf(), secretCodeArray, lastPosition);
