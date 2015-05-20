@@ -1,8 +1,8 @@
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Created by slus on 15-05-17.
@@ -18,11 +18,12 @@ public class HuffmanCompression {
         leafArray = createFreqTable(fileLocation+fileName);
         SecretCode[] secretCodeArray = new SecretCode[leafArray.length];
 
-        printArray("Before Sort", leafArray);
+        //printArray("Before Sort", leafArray);
         sortArray(leafArray);
-        printArray("After Sort", leafArray);
+        //printArray("After Sort", leafArray);
         secretCodeArray = makeSecretCode(Leaf.makeTree(leafArray), secretCodeArray, 0);
         compress(fileLocation, fileName, secretCodeArray);
+        decompress(fileLocation, fileName);
     }
 
     private static void compress(String fileLocation, String fileName, SecretCode[] secretCodes) {
@@ -31,18 +32,60 @@ public class HuffmanCompression {
             FileOutputStream outFile = new FileOutputStream(fileLocation + fileName + ".huf");
 
             //Write SecretCode to header
+            //outFile.write(000);
             for (int i = 0; i < secretCodes.length; i++) {
-                int secretCodeLength = secretCodes[i].getSecretCode().length();
-                char[] charArray;
-                charArray = secretCodes[i].getSecretCode().toCharArray();
-                for (int j= 0; j < secretCodeLength; j++){
-                    //outFile.write((byte)charArray[j]);
-                    outFile.write(Integer.bitCount(1));
-                }
-
+                outFile.write((byte)secretCodes[i].getSymbol());
+                outFile.write(secretCodes[i].getSecretCode().getBytes());
+                outFile.write(012);
             }
 
+            //Write converted Characters
+            outFile.write(002);
+            int characters;
+            SecretCode[] largeArray = new SecretCode[256];
+            for (int i = 0; i < secretCodes.length; i++){
+                largeArray[(int)secretCodes[i].getSymbol()] = secretCodes[i];
+            }
+
+            String toOutput = "";
+            while(( characters = inFile.read()) != -1) {
+                toOutput += largeArray[characters].getSecretCode();
+            }
+            //Write the text to the file
+            outFile.write(toOutput.getBytes());
+            outFile.close();
+            inFile.close();
+
             }catch(IOException e){
+            e.printStackTrace();
+        }
+    }
+
+    private static void decompress(String fileLocation, String fileName){
+        try {
+            File file = new File(fileLocation+fileName+".huf");
+            FileInputStream toDecompress = new FileInputStream(file);
+
+            FileOutputStream toWrite = new FileOutputStream(fileLocation+"Uncompressed_"+fileName);
+
+            String textLine;
+            SecretCode[] secretCode = new SecretCode[256];
+            int endOfHeader = 0;
+            //Read header
+            RandomAccessFile raf = new RandomAccessFile(file, "r");
+            while ((textLine = raf.readLine()) !=  null){
+                raf.readByte();
+            }
+
+            //Read body
+
+            //Convert body to char
+
+            //Write to outfile
+
+
+
+        }catch(IOException e){
             e.printStackTrace();
         }
     }
@@ -151,6 +194,7 @@ public class HuffmanCompression {
                     }
                 }
             }
+            file.close();
         }catch(IOException e){
             e.printStackTrace();
             System.out.println("The file you have requested does not exist");
