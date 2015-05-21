@@ -9,7 +9,7 @@ import java.util.Random;
  */
 public class HuffmanCompression {
 
-    private static int length;
+    private static int half;
 
     public static void main(String[] args){
         Leaf[] leafArray;
@@ -19,11 +19,12 @@ public class HuffmanCompression {
         SecretCode[] secretCodeArray = new SecretCode[leafArray.length];
 
         //printArray("Before Sort", leafArray);
-        sortArray(leafArray);
+        leafArray = sortArray(leafArray);
         //printArray("After Sort", leafArray);
-        secretCodeArray = makeSecretCode(Leaf.makeTree(leafArray), secretCodeArray, 0);
-        compress(fileLocation, fileName, secretCodeArray);
-        decompress(fileLocation, fileName);
+        //secretCodeArray = makeSecretCode(Leaf.makeTree(leafArray), secretCodeArray, 0);
+        Leaf.makeTree(leafArray);
+        //compress(fileLocation, fileName, secretCodeArray);
+        //decompress(fileLocation, fileName);
     }
 
     private static void compress(String fileLocation, String fileName, SecretCode[] secretCodes) {
@@ -31,16 +32,17 @@ public class HuffmanCompression {
             FileInputStream inFile = new FileInputStream(fileLocation+fileName);
             FileOutputStream outFile = new FileOutputStream(fileLocation + fileName + ".huf");
 
+
             //Write SecretCode to header
-            //outFile.write(000);
             for (int i = 0; i < secretCodes.length; i++) {
-                outFile.write((byte)secretCodes[i].getSymbol());
+                outFile.write((int)secretCodes[i].getSymbol());
                 outFile.write(secretCodes[i].getSecretCode().getBytes());
-                outFile.write(012);
+                //Write start of text
+                //outFile.write(012);
             }
 
             //Write converted Characters
-            outFile.write(002);
+            //outFile.write(002);
             int characters;
             SecretCode[] largeArray = new SecretCode[256];
             for (int i = 0; i < secretCodes.length; i++){
@@ -64,30 +66,75 @@ public class HuffmanCompression {
     private static void decompress(String fileLocation, String fileName){
         try {
             File file = new File(fileLocation+fileName+".huf");
-            FileInputStream toDecompress = new FileInputStream(file);
 
             FileOutputStream toWrite = new FileOutputStream(fileLocation+"Uncompressed_"+fileName);
 
             String textLine;
+            String toDecode = "";
             SecretCode[] secretCode = new SecretCode[256];
-            int endOfHeader = 0;
+            int arrayIndex = 0;
+            boolean isNewLine = false;
+
             //Read header
             RandomAccessFile raf = new RandomAccessFile(file, "r");
             while ((textLine = raf.readLine()) !=  null){
-                raf.readByte();
+                byte[] byteTest = new byte[textLine.length()];
+                if(textLine.length() == 0) {
+                    textLine = raf.readLine();
+                    byteTest = textLine.getBytes();
+                    isNewLine = true;
+                }
+                else{
+                    byteTest = textLine.getBytes();
+                }
+
+
+                    if (byteTest[0] != 002) {
+                        SecretCode tempSecret = null;
+                        if(isNewLine){
+                            tempSecret = new SecretCode((char)012, new String(byteTest).substring(1));
+                            isNewLine = false;
+                        }else {
+                            tempSecret = new SecretCode((char)  byteTest[0], new String(byteTest).substring(1));
+                        }
+                        secretCode[arrayIndex] = tempSecret;
+                        arrayIndex++;
+                    } else {
+                        toDecode = new String(byteTest).substring(1);
+                        System.out.println("In binary" + toDecode);
+                    }
+                //}
             }
 
-            //Read body
+            SecretCode[] compactSecret = new SecretCode[arrayIndex];
+            for (int i = 0; i < arrayIndex; i++){
+                compactSecret[i] = secretCode[i];
+            }
 
-            //Convert body to char
+            toWrite.write(decode(toDecode,compactSecret,"").getBytes());
 
-            //Write to outfile
-
-
+            toWrite.close();
 
         }catch(IOException e){
             e.printStackTrace();
         }
+    }
+
+    private static String decode(String toDecode, SecretCode[] secretCodes, String result) {
+        while(toDecode.length() != 0) {
+            String toCompare = "";
+            int maxIndex = secretCodes[secretCodes.length-1].getSecretCode().length();
+            int index = -1;
+            //Do while O(n)
+            do {
+                index++;
+                char temp = toDecode.charAt(index);
+                toCompare += temp;
+            } while (toDecode.charAt(index) != '0' && toCompare.length() < maxIndex);
+            result += secretCodes[toCompare.length()-1].getSymbol();
+            toDecode = toDecode.substring(toCompare.length());
+        }
+        return result;
     }
 
     private static SecretCode[] makeSecretCode(Leaf node, SecretCode[] secretCodeArray, int lastPosition) {
@@ -125,18 +172,19 @@ public class HuffmanCompression {
 
     //Heap Sort. Most consistent O(n log(n))
     //FROM http://www.sanfoundry.com/java-program-implement-heap-sort/
-    private static void sortArray(Leaf[] leafArray) {
+    private static Leaf[] sortArray(Leaf[] leafArray) {
         makeHeap(leafArray);
-        for(int i = length; i > 0; i--){
+        for(int i = half; i > 0; i--){
             swapValues(leafArray,0, i);
-            length -= 1;
+            half -= 1;
             swapLargeElement(leafArray,0);
         }
+        return leafArray;
     }
 
     public static void makeHeap(Leaf[] leafArray){
-        length = leafArray.length-1;
-        for (int i = length/2; i >= 0; i--){
+        half = leafArray.length-1;
+        for (int i = half/2; i >= 0; i--){
             swapLargeElement(leafArray, i);
         }
     }
@@ -146,10 +194,10 @@ public class HuffmanCompression {
         int rightValue = 2*i + 1;
         int maxValue = i;
 
-        if(leftValue <= length && leafArray[leftValue].getFrequency() > leafArray[i].getFrequency()){
+        if(leftValue <= half && leafArray[leftValue].getFrequency() > leafArray[i].getFrequency()){
             maxValue = leftValue;
         }
-        if(rightValue <= length && leafArray[rightValue].getFrequency() > leafArray[maxValue].getFrequency()){
+        if(rightValue <= half && leafArray[rightValue].getFrequency() > leafArray[maxValue].getFrequency()){
             maxValue = rightValue;
         }
 

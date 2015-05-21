@@ -22,6 +22,17 @@ public class Leaf {
         this.branchValueToParent = "";
     }
 
+    public Leaf(Leaf leaf) {
+        this.symbol = leaf.getSymbol();
+        this.frequency = leaf.getFrequency();
+        this.parentNode = leaf.getParentNode();
+        this.leftLeaf = leaf.getLeftLeaf();
+        this.rightLeaf = leaf.getRightLeaf();
+        this.isNode = leaf.isNode();
+        this.isRoot = leaf.isRoot();
+        this.branchValueToParent = leaf.getBranchValueToParent();
+    }
+
     public Leaf(char symbol, int frequency, Leaf charNode){
         this.symbol = symbol;
         this.frequency = frequency;
@@ -44,41 +55,52 @@ public class Leaf {
         this.branchValueToParent = "";
     }
 
-    public Leaf(Leaf leaf1, Leaf leaf2, boolean isRoot){
-        this.isNode = true;
+    public Leaf(Leaf leaf1, Leaf leaf2){
         this.frequency = leaf1.getFrequency() + leaf2.getFrequency();
-        this.symbol = '\0';
-
-        if(leaf1.getSymbol() == '\0'){
-            leaf1.setParentNode(this);
-            leaf2.setParentNode(this);
-            rightLeaf = leaf1;
-            leftLeaf = leaf2;
-        }
-        else{
-            if((int)leaf1.getSymbol() >= (int)leaf2.getSymbol()){
-                leftLeaf = leaf2;
-                rightLeaf = leaf1;
-            }
-            else {
-                leftLeaf = leaf2;
-                rightLeaf = leaf1;
-            }
-        }
-        this.isRoot = isRoot;
+        this.rightLeaf = leaf1;
+        this.leftLeaf = leaf2;
     }
 
     public static Leaf makeTree(Leaf[] leafArray){
+
+
         Leaf[] tree = new Leaf[leafArray.length];
         Leaf previousLeaf = null;
         int startIndex = 2;
-        Leaf firstLeafNode = new Leaf(leafArray[0], leafArray[1], false);
-        previousLeaf = firstLeafNode;
 
-        for(int i = 2; i < leafArray.length; i++){
-            Leaf leafNode = new Leaf(previousLeaf, leafArray[i], false);
-            previousLeaf = leafNode;
+        while (leafArray.length > 1){
+            Leaf firstLeafNode = new Leaf(leafArray[0], leafArray[1]);
+            previousLeaf = firstLeafNode;
+
+            Leaf[] temp = new Leaf[leafArray.length-2];
+            int index = 0;
+
+            leafArray[0] = null;
+            leafArray[1] = null;
+
+
+            // I want to creat a new array of size leafArray.length-2 so that I can remove the used leaves.
+            //Also if the frequency of the node that was just created is less than the next item in the original
+            //array input the new node first
+            for (int i = 0; i < leafArray.length; i++){
+                if(leafArray[i] != null){
+                    if(leafArray[i].getFrequency() < firstLeafNode.getFrequency()){
+                        temp[index] = leafArray[i];
+                        index++;
+                    }
+                    else{
+                        temp[index] = firstLeafNode;
+                        index++;
+                        temp[index] = leafArray[i];
+                    }
+                }
+            }
+
+            //In this for loop Make a new array of size leafarray.length - 2 because I want to remove
+
+
         }
+
         previousLeaf.setIsRoot(true);
         return previousLeaf;
     }
@@ -146,4 +168,5 @@ public class Leaf {
     public void setBranchValueToParent(String branchValueToParent) {
         this.branchValueToParent = branchValueToParent;
     }
+
 }
