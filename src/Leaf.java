@@ -1,3 +1,6 @@
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Created by slus on 15-05-17.
  */
@@ -10,6 +13,17 @@ public class Leaf {
     boolean isNode;
     boolean isRoot;
     String branchValueToParent;
+
+    public boolean isWasVisited() {
+        return wasVisited;
+    }
+
+    public void setWasVisited(boolean wasVisited) {
+        this.wasVisited = wasVisited;
+    }
+
+    boolean wasVisited = false;
+
 
     public Leaf() {
         this.symbol = '\0';
@@ -56,52 +70,61 @@ public class Leaf {
     }
 
     public Leaf(Leaf leaf1, Leaf leaf2){
+        this.isNode = true;
         this.frequency = leaf1.getFrequency() + leaf2.getFrequency();
-        this.rightLeaf = leaf1;
-        this.leftLeaf = leaf2;
+        if(leaf1.isNode){
+            this.rightLeaf = leaf1;
+            this.leftLeaf = leaf2;
+        }
+        else if(leaf2.isNode){
+            this.rightLeaf = leaf2;
+            this.leftLeaf = leaf1;
+        }
+        else {
+            this.rightLeaf = leaf1;
+            this.leftLeaf = leaf2;
+        }
+
+        leaf1.setParentNode(this);
+        leaf2.setParentNode(this);
+
+
     }
 
-    public static Leaf makeTree(Leaf[] leafArray){
+    public static Leaf makeTree(List<Leaf> leafArray){
 
 
-        Leaf[] tree = new Leaf[leafArray.length];
         Leaf previousLeaf = null;
-        int startIndex = 2;
 
-        while (leafArray.length > 1){
-            Leaf firstLeafNode = new Leaf(leafArray[0], leafArray[1]);
+        while (leafArray.size() != 1){
+            Leaf firstLeafNode = new Leaf(leafArray.get(0), leafArray.get(1));
+            System.out.println(" first  element is: " + leafArray.get(0).getSymbol() + " with frequency = " + leafArray.get(0).getFrequency() );
+            System.out.println(" first  element is: " + leafArray.get(1).getSymbol() + " with frequency = " + leafArray.get(1).getFrequency() );
+
             previousLeaf = firstLeafNode;
 
-            Leaf[] temp = new Leaf[leafArray.length-2];
+            List<Leaf> temp = new ArrayList<>();
+            //Leaf[] temp = new Leaf[leafArray.length-1];
             int index = 0;
+            int insertPos = 0;
 
-            leafArray[0] = null;
-            leafArray[1] = null;
-
+            leafArray.remove(0);
+            leafArray.remove(0);
 
             // I want to creat a new array of size leafArray.length-2 so that I can remove the used leaves.
             //Also if the frequency of the node that was just created is less than the next item in the original
             //array input the new node first
-            for (int i = 0; i < leafArray.length; i++){
-                if(leafArray[i] != null){
-                    if(leafArray[i].getFrequency() < firstLeafNode.getFrequency()){
-                        temp[index] = leafArray[i];
-                        index++;
-                    }
-                    else{
-                        temp[index] = firstLeafNode;
-                        index++;
-                        temp[index] = leafArray[i];
+            for(int i = 0; i < leafArray.size(); i++){
+                if(leafArray.get(i) != null) {
+                    if (leafArray.get(i).getFrequency() <= previousLeaf.getFrequency()) {
+                        insertPos++;
                     }
                 }
             }
-
-            //In this for loop Make a new array of size leafarray.length - 2 because I want to remove
-
-
+            leafArray.add(insertPos, previousLeaf);
         }
 
-        previousLeaf.setIsRoot(true);
+        //previousLeaf.setIsRoot(true);
         return previousLeaf;
     }
 

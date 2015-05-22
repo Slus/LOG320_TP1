@@ -1,8 +1,6 @@
 import java.io.*;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 /**
  * Created by slus on 15-05-17.
@@ -10,55 +8,57 @@ import java.util.Random;
 public class HuffmanCompression {
 
     private static int half;
+    private static List<SecretCode> secretArray = new ArrayList<>(255);
+
 
     public static void main(String[] args){
-        Leaf[] leafArray;
+        List<Leaf> leafArray = new ArrayList<>();
+        //Leaf[] leafArray;
         String fileLocation = "/Users/slus/Desktop/";
         String fileName = "hello.txt";
-        leafArray = createFreqTable(fileLocation+fileName);
-        SecretCode[] secretCodeArray = new SecretCode[leafArray.length];
+        leafArray = createFreqTable(fileLocation + fileName);
+        SecretCode[] secretCodeArray = new SecretCode[leafArray.size()];
 
         //printArray("Before Sort", leafArray);
         leafArray = sortArray(leafArray);
         //printArray("After Sort", leafArray);
-        //secretCodeArray = makeSecretCode(Leaf.makeTree(leafArray), secretCodeArray, 0);
-        Leaf.makeTree(leafArray);
-        //compress(fileLocation, fileName, secretCodeArray);
-        //decompress(fileLocation, fileName);
+        generateSecretCode(Leaf.makeTree(leafArray), secretCodeArray);
+        //Leaf.makeTree(leafArray);
+        compress(fileLocation, fileName);
+        decompress(fileLocation, fileName);
     }
 
-    private static void compress(String fileLocation, String fileName, SecretCode[] secretCodes) {
+    private static void compress(String fileLocation, String fileName) {
         try {
             FileInputStream inFile = new FileInputStream(fileLocation+fileName);
             FileOutputStream outFile = new FileOutputStream(fileLocation + fileName + ".huf");
 
 
             //Write SecretCode to header
-            for (int i = 0; i < secretCodes.length; i++) {
-                outFile.write((int)secretCodes[i].getSymbol());
-                outFile.write(secretCodes[i].getSecretCode().getBytes());
+            for (int i = 0; i < secretArray.size(); i++) {
+                outFile.write((int)secretArray.get(i).getSymbol());
+                outFile.write(secretArray.get(i).getSecretCode().getBytes());
                 //Write start of text
-                //outFile.write(012);
+                outFile.write(012);
             }
 
             //Write converted Characters
-            //outFile.write(002);
+            outFile.write(002);
             int characters;
-            SecretCode[] largeArray = new SecretCode[256];
-            for (int i = 0; i < secretCodes.length; i++){
-                largeArray[(int)secretCodes[i].getSymbol()] = secretCodes[i];
+            SecretCode[] arrayOfCode = new SecretCode[255];
+            for (int i = 0; i < secretArray.size(); i++){
+                arrayOfCode[(int)secretArray.get(i).getSymbol()] = secretArray.get(i);
             }
-
             String toOutput = "";
             while(( characters = inFile.read()) != -1) {
-                toOutput += largeArray[characters].getSecretCode();
+                toOutput += arrayOfCode[(int)characters].getSecretCode();
             }
             //Write the text to the file
             outFile.write(toOutput.getBytes());
             outFile.close();
             inFile.close();
 
-            }catch(IOException e){
+        }catch(IOException e){
             e.printStackTrace();
         }
     }
@@ -89,20 +89,20 @@ public class HuffmanCompression {
                 }
 
 
-                    if (byteTest[0] != 002) {
-                        SecretCode tempSecret = null;
-                        if(isNewLine){
-                            tempSecret = new SecretCode((char)012, new String(byteTest).substring(1));
-                            isNewLine = false;
-                        }else {
-                            tempSecret = new SecretCode((char)  byteTest[0], new String(byteTest).substring(1));
-                        }
-                        secretCode[arrayIndex] = tempSecret;
-                        arrayIndex++;
-                    } else {
-                        toDecode = new String(byteTest).substring(1);
-                        System.out.println("In binary" + toDecode);
+                if (byteTest[0] != 002) {
+                    SecretCode tempSecret = null;
+                    if(isNewLine){
+                        tempSecret = new SecretCode((char)012, new String(byteTest));
+                        isNewLine = false;
+                    }else {
+                        tempSecret = new SecretCode((char)  byteTest[0], new String(byteTest).substring(1));
                     }
+                    secretCode[arrayIndex] = tempSecret;
+                    arrayIndex++;
+                } else {
+                    toDecode = new String(byteTest).substring(1);
+                    System.out.println("In binary" + toDecode);
+                }
                 //}
             }
 
@@ -111,7 +111,7 @@ public class HuffmanCompression {
                 compactSecret[i] = secretCode[i];
             }
 
-            toWrite.write(decode(toDecode,compactSecret,"").getBytes());
+            toWrite.write(decode(toDecode, compactSecret, "").getBytes());
 
             toWrite.close();
 
@@ -123,56 +123,107 @@ public class HuffmanCompression {
     private static String decode(String toDecode, SecretCode[] secretCodes, String result) {
         while(toDecode.length() != 0) {
             String toCompare = "";
-            int maxIndex = secretCodes[secretCodes.length-1].getSecretCode().length();
-            int index = -1;
+            int maxIndex = secretCodes[secretCodes.length - 1].getSecretCode().length();
+            int index = 1;
+            boolean isFound = false;
+            int arrayPos = 0;
+            int otherIndex = 0;
+
+            String temp;
+
+            while (toDecode.length() != 0)
+                for (int i = 0; i < secretCodes.length; i++) {
+                    temp = toDecode.substring(0, index);
+                    if (secretCodes[i].getSecretCode().startsWith(temp)) {
+                        if (checkIfMore(toDecode, secretCodes[i].getSecretCode()) == true) {
+                            arrayPos = i;
+                        } else {
+                            arrayPos = -1;
+                        }
+                    }
+                }
+                otherIndex++;
+                toDecode = toDecode.substring(arrayPos);
+                result += secretCodes[arrayPos].getSymbol();
+            }
+
+
             //Do while O(n)
-            do {
+            /*do {
                 index++;
                 char temp = toDecode.charAt(index);
                 toCompare += temp;
-            } while (toDecode.charAt(index) != '0' && toCompare.length() < maxIndex);
-            result += secretCodes[toCompare.length()-1].getSymbol();
-            toDecode = toDecode.substring(toCompare.length());
-        }
+
+            } while (toCompare.length() < maxIndex || isFound);*/
+            //toDecode = toDecode.substring(toCompare.length());
         return result;
     }
 
-    private static SecretCode[] makeSecretCode(Leaf node, SecretCode[] secretCodeArray, int lastPosition) {
-        String goLeft = "0";
-        String goRight = "1";
-        SecretCode code = new SecretCode();
-        if(node.isRoot()){
-            code.setSymbol(node.getLeftLeaf().getSymbol());
-            code.setSecretCode(code.getSecretCode() + goLeft);
-            if(node.getRightLeaf().isNode){
-                node.getRightLeaf().setBranchValueToParent(goRight);
-            }
-            secretCodeArray[lastPosition] = code;
-            lastPosition++;
-            makeSecretCode(node.getRightLeaf(), secretCodeArray, lastPosition);
+    private static boolean checkIfMore(String toDecode, String code) {
+        if(toDecode == code){
+            return true;
+        }
+        return false;
+    }
+
+    public static void goLeft(Leaf node, SecretCode secretCode){
+        //System.out.print(node.getFrequency() + "\n");
+        //Gets me to left most leaf
+        if(node.getLeftLeaf() != null && !node.getLeftLeaf().wasVisited) {
+            node.setWasVisited(true);
+            node.getLeftLeaf().setBranchValueToParent("0");
+            goLeft(node.getLeftLeaf(), secretCode);
+
+        } else if(node.getRightLeaf() != null){
+            node.setWasVisited(true);
+            node.getRightLeaf().setBranchValueToParent("1");
+            goLeft(node.getRightLeaf(), secretCode);
         }
         else{
-            if(node.isNode){
-                code.setSymbol(node.getLeftLeaf().getSymbol());
-                code.setSecretCode(node.branchValueToParent + goLeft);
-                node.getRightLeaf().setBranchValueToParent(node.getBranchValueToParent() + goRight);
-                secretCodeArray[lastPosition] = code;
-                lastPosition++;
-                makeSecretCode(node.getRightLeaf(), secretCodeArray, lastPosition);
-            }
-            //NOT A NODE END OF TREE
-            else{
-                code.setSymbol(node.getSymbol());
-                code.setSecretCode(node.getBranchValueToParent() + goRight);
-                secretCodeArray[lastPosition] = code;
-            }
+            node.setWasVisited(true);
+            secretCode.setSecretCode(makeSecretCode(node));
+            secretCode.setSymbol(node.getSymbol());
+
+            secretArray.add(secretCode);
+            SecretCode secretCode1 = new SecretCode();
+            System.out.println(secretCode.getSecretCode());
+            tryRight(node.getParentNode(), secretCode1);
         }
-        return secretCodeArray;
+    }
+
+    public static void tryRight(Leaf node, SecretCode secretCode){
+        if(node.getRightLeaf() != null && !node.getRightLeaf().wasVisited){
+            node.getRightLeaf().setWasVisited(true);
+            node.getRightLeaf().setBranchValueToParent("1");
+            goLeft(node.getRightLeaf(), secretCode);
+        }
+        else{
+            if(node.getParentNode() != null){
+                node.setWasVisited(true);
+                //node.setBranchValueToParent("1");
+                tryRight(node.getParentNode(), secretCode);
+            }
+
+        }
+    }
+
+    private static String makeSecretCode(Leaf node) {
+        String secret = "";
+        while(node.getParentNode() != null){
+            secret =  node.getBranchValueToParent() + secret;
+            node = node.getParentNode();
+        }
+        return secret;
+    }
+
+    private static void generateSecretCode(Leaf node, SecretCode[] secretCodeArray) {
+        SecretCode code = new SecretCode();
+        goLeft(node, code);
     }
 
     //Heap Sort. Most consistent O(n log(n))
     //FROM http://www.sanfoundry.com/java-program-implement-heap-sort/
-    private static Leaf[] sortArray(Leaf[] leafArray) {
+    private static List<Leaf> sortArray(List<Leaf> leafArray) {
         makeHeap(leafArray);
         for(int i = half; i > 0; i--){
             swapValues(leafArray,0, i);
@@ -182,22 +233,22 @@ public class HuffmanCompression {
         return leafArray;
     }
 
-    public static void makeHeap(Leaf[] leafArray){
-        half = leafArray.length-1;
+    public static void makeHeap(List<Leaf> leafArray){
+        half = leafArray.size()-1;
         for (int i = half/2; i >= 0; i--){
             swapLargeElement(leafArray, i);
         }
     }
 
-    private static void swapLargeElement(Leaf[] leafArray, int i) {
+    private static void swapLargeElement(List<Leaf> leafArray, int i) {
         int leftValue = 2*i;
         int rightValue = 2*i + 1;
         int maxValue = i;
 
-        if(leftValue <= half && leafArray[leftValue].getFrequency() > leafArray[i].getFrequency()){
+        if(leftValue <= half && leafArray.get(leftValue).getFrequency() > leafArray.get(i).getFrequency()){
             maxValue = leftValue;
         }
-        if(rightValue <= half && leafArray[rightValue].getFrequency() > leafArray[maxValue].getFrequency()){
+        if(rightValue <= half && leafArray.get(rightValue).getFrequency() > leafArray.get(maxValue).getFrequency()){
             maxValue = rightValue;
         }
 
@@ -207,10 +258,10 @@ public class HuffmanCompression {
         }
     }
 
-    private static void swapValues(Leaf[] leafArray, int i, int maxValue) {
-        Leaf tempLeaf = leafArray[i];
-        leafArray[i] = leafArray[maxValue];
-        leafArray[maxValue] = tempLeaf;
+    private static void swapValues(List<Leaf> leafArray, int i, int maxValue) {
+        Leaf tempLeaf = leafArray.get(i);
+        leafArray.set(leafArray.indexOf(leafArray.get(i)), leafArray.get(maxValue));
+        leafArray.set(maxValue, tempLeaf);
     }
 
     private static void printArray(String message, Leaf[] leafArray) {
@@ -223,7 +274,7 @@ public class HuffmanCompression {
         System.out.println("Array is of size: " + leafArray.length);
     }
 
-    private static Leaf[] createFreqTable(String directory) {
+    private static List<Leaf> createFreqTable(String directory) {
         Leaf[] charArray = new Leaf[256];
         List<Integer> usedChar = new ArrayList<>();
         try{
@@ -238,7 +289,7 @@ public class HuffmanCompression {
                         usedChar.add(characters);
                     }
                     else{
-                        charArray[characters].setFrequency(charArray[characters].getFrequency()+1);
+                        charArray[characters].setFrequency(charArray[characters].getFrequency() + 1);
                     }
                 }
             }
@@ -248,10 +299,9 @@ public class HuffmanCompression {
             System.out.println("The file you have requested does not exist");
         }
 
-        Leaf[] betterCharArray = new Leaf[usedChar.size()];
+        List<Leaf> betterCharArray = new ArrayList<>();
         for(int i= 0; i <= usedChar.size()-1; i++){
-            betterCharArray[i] = charArray[usedChar.get(i)];
-            betterCharArray[i] = charArray[usedChar.get(i)];
+            betterCharArray.add(charArray[usedChar.get(i)]);
         }
         return betterCharArray;
     }
