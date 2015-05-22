@@ -121,21 +121,29 @@ public class HuffmanCompression {
     }
 
     private static String decode(String toDecode, SecretCode[] secretCodes, String result) {
-        while(toDecode.length() != 0) {
+        int indexOfDecode;
+
+
+
+    }
+
+        /*while(toDecode.length() != 0) {
             String toCompare = "";
             int maxIndex = secretCodes[secretCodes.length - 1].getSecretCode().length();
             int index = 1;
             boolean isFound = false;
             int arrayPos = 0;
             int otherIndex = 0;
-
+            List<SecretCode> test = new ArrayList<>();
             String temp;
 
             while (toDecode.length() != 0)
                 for (int i = 0; i < secretCodes.length; i++) {
                     temp = toDecode.substring(0, index);
                     if (secretCodes[i].getSecretCode().startsWith(temp)) {
-                        if (checkIfMore(toDecode, secretCodes[i].getSecretCode()) == true) {
+                        test.add(secretCodes[i]);
+                        int goodPosition = checkIfMore(test)
+                        if () {
                             arrayPos = i;
                         } else {
                             arrayPos = -1;
@@ -159,9 +167,9 @@ public class HuffmanCompression {
         return result;
     }
 
-    private static boolean checkIfMore(String toDecode, String code) {
-        if(toDecode == code){
-            return true;
+    private static boolean checkIfMore(String toDecode, List<SecretCode> test) {
+        while(test.size() != 0){
+
         }
         return false;
     }
