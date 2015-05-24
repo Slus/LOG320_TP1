@@ -12,17 +12,9 @@ public class Leaf {
     Leaf rightLeaf;
     boolean isNode;
     boolean isRoot;
-    String branchValueToParent;
-
-    public boolean isWasVisited() {
-        return wasVisited;
-    }
-
-    public void setWasVisited(boolean wasVisited) {
-        this.wasVisited = wasVisited;
-    }
-
+    String leafCode;
     boolean wasVisited = false;
+    int position;
 
 
     public Leaf() {
@@ -33,7 +25,7 @@ public class Leaf {
         this.rightLeaf = null;
         this.isNode = false;
         this.isRoot = false;
-        this.branchValueToParent = "";
+        this.leafCode = "";
     }
 
     public Leaf(Leaf leaf) {
@@ -44,7 +36,7 @@ public class Leaf {
         this.rightLeaf = leaf.getRightLeaf();
         this.isNode = leaf.isNode();
         this.isRoot = leaf.isRoot();
-        this.branchValueToParent = leaf.getBranchValueToParent();
+        this.leafCode = leaf.getLeafCode();
     }
 
     public Leaf(char symbol, int frequency, Leaf charNode){
@@ -55,10 +47,10 @@ public class Leaf {
         this.rightLeaf = null;
         this.isNode = false;
         this.isRoot = false;
-        this.branchValueToParent = "";
+        this.leafCode = "";
     }
 
-    public Leaf(char symbol, int frequency){
+    public Leaf(char symbol, int frequency, int position){
         this.symbol = symbol;
         this.frequency = frequency;
         this.parentNode = null;
@@ -66,7 +58,8 @@ public class Leaf {
         this.rightLeaf = null;
         this.isNode = false;
         this.isRoot = false;
-        this.branchValueToParent = "";
+        this.leafCode = "";
+        this.position = position;
     }
 
     public Leaf(Leaf leaf1, Leaf leaf2){
@@ -91,41 +84,43 @@ public class Leaf {
 
     }
 
-    public static Leaf makeTree(List<Leaf> leafArray){
+    public Leaf createTree(int[] freqTable){
+        List<Leaf> theTree = new ArrayList<>();
 
-
-        Leaf previousLeaf = null;
-
-        while (leafArray.size() != 1){
-            Leaf firstLeafNode = new Leaf(leafArray.get(0), leafArray.get(1));
-            System.out.println(" first  element is: " + leafArray.get(0).getSymbol() + " with frequency = " + leafArray.get(0).getFrequency() );
-            System.out.println(" first  element is: " + leafArray.get(1).getSymbol() + " with frequency = " + leafArray.get(1).getFrequency() );
-
-            previousLeaf = firstLeafNode;
-
-            List<Leaf> temp = new ArrayList<>();
-            //Leaf[] temp = new Leaf[leafArray.length-1];
-            int index = 0;
-            int insertPos = 0;
-
-            leafArray.remove(0);
-            leafArray.remove(0);
-
-            // I want to creat a new array of size leafArray.length-2 so that I can remove the used leaves.
-            //Also if the frequency of the node that was just created is less than the next item in the original
-            //array input the new node first
-            for(int i = 0; i < leafArray.size(); i++){
-                if(leafArray.get(i) != null) {
-                    if (leafArray.get(i).getFrequency() <= previousLeaf.getFrequency()) {
-                        insertPos++;
-                    }
-                }
+        //Get all non-null items in the array and store them into the arraylist
+        for(int i = 0; i < freqTable.length; i++){
+            if(freqTable[i] != 0){
+                Leaf tempLeaf = new Leaf((char)i, freqTable[i], i);
+                theTree.add(tempLeaf);
             }
-            leafArray.add(insertPos, previousLeaf);
         }
 
-        //previousLeaf.setIsRoot(true);
-        return previousLeaf;
+        //Sort arraylist by frequency
+        HuffmanCompression.sortArray(theTree);
+
+        if(theTree.size() == 1){
+            Leaf lonelyLeaf = theTree.remove(0);
+            Leaf templeaf = new Leaf('\0',0, 0);
+            theTree.add(new Leaf(lonelyLeaf, templeaf));
+        }
+        else{
+            while(theTree.size() != 1) {
+                int insertPos = 0;
+                Leaf leaf1 = theTree.remove(0);
+                Leaf leaf2 = theTree.remove(0);
+
+                Leaf node = new Leaf(leaf1, leaf2);
+
+                //get position to place in theTree array
+                while (insertPos < theTree.size() && node.getFrequency() > theTree.get(insertPos).getFrequency()) {
+                    insertPos++;
+                }
+                //Add node to the correct location
+                theTree.add(insertPos, node);
+            }
+        }
+        theTree.get(0).setLeafCode("");
+        return theTree.get(0);
     }
 
     public char getSymbol() {
@@ -184,12 +179,27 @@ public class Leaf {
         this.isRoot = isRoot;
     }
 
-    public String getBranchValueToParent() {
-        return branchValueToParent;
+    public String getLeafCode() {
+        return leafCode;
     }
 
-    public void setBranchValueToParent(String branchValueToParent) {
-        this.branchValueToParent = branchValueToParent;
+    public void setLeafCode(String leafCode) {
+        this.leafCode = leafCode;
     }
 
+    public boolean isWasVisited() {
+        return wasVisited;
+    }
+
+    public void setWasVisited(boolean wasVisited) {
+        this.wasVisited = wasVisited;
+    }
+
+    public int getPosition() {
+        return position;
+    }
+
+    public void setPosition(int position) {
+        this.position = position;
+    }
 }
