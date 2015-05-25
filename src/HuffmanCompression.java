@@ -1,3 +1,5 @@
+import sun.text.IntHashtable;
+
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,13 +13,14 @@ public class HuffmanCompression {
 
     //Allows to store the secretCodes and access them via the (int)char
     static String[] secretCodes = new String[257];
+    static int[] freqTable;
 
     public static void main(String[] args) {
         String fileLocation = "/Users/slus/Desktop/";
         String fileName = "hello.txt";
 
         //Create Frequency table
-        int[] freqTable = createFreqTable(fileLocation + fileName);
+        freqTable = createFreqTable(fileLocation + fileName);
 
         //Create Tree and store the last leaf in root containing all other leaves
         Leaf root = new Leaf();
@@ -35,95 +38,143 @@ public class HuffmanCompression {
 
             byte toDecompress[] = new byte[(int)file.length()];
             FileInputStream fi = new FileInputStream(file);
-            //fi.read(toDecompress);
+            fi.read(toDecompress);
 
-            System.out.println("PLEASE WORK " + Integer.toBinaryString(toDecompress[0]));
+            //Convert all bytes back to string
             String toDecode = "";
 
-            String EOF = "100000000";
-            String test = EOF.substring(0, EOF.length()-1);
+            int characterCount = Integer.parseInt(toDecompress[0]+"");
+            int charsToProcess = Integer.parseInt(toDecompress[1]+"");
+            int[] decodedFreqTable = new int[256];
 
-            RandomAccessFile raf = new RandomAccessFile(file, "r");
+            int bytesTraversed = 2;
 
-            int testByte = raf.readUnsignedByte();
-            int testByte2 = raf.readUnsignedByte();
-
-
-
-            for(int i = 0; i < toDecompress.length; i++){
-                if(Integer.toBinaryString(toDecompress[i]).equals(EOF.substring(0, EOF.length()-1))){
-                    System.out.print("WOT?");
-                    if(Integer.toBinaryString(toDecompress[i+1]).equals("00000000")){
-                        //Done Reading
-                    }
-                }
-                else{
-                    System.out.println("THIS IS WHAT I FUCKING READ: "  + Integer.toBinaryString(toDecompress[i]));
-                }
+            for(int i = bytesTraversed; i < toDecompress.length;i++){
+                toDecode += makeByte(Integer.toBinaryString(toDecompress[i]));
             }
 
+            while(characterCount != 0){
+                int semicolonLocation = toDecode.indexOf("00111011");
+                String fullString = toDecode.substring(0, semicolonLocation);
+                bytesTraversed += (fullString.length()+16)/8;
+
+                int positionToInsert = Integer.parseInt(fullString.substring(0,8),2);
+                int frequency = Integer.parseInt(fullString.substring(8),2);
+                decodedFreqTable[positionToInsert] = frequency;
+                characterCount--;
+            }
+
+            //reset toDecode in order to get only everything after the header
+            toDecode = "";
+
+            //Make header with full bits
+            for(int i = bytesTraversed; i < toDecompress.length;i++){
+                toDecode += Integer.toBinaryString(toDecompress[i]&0xff);
+            }
+
+            System.out.println("Decoded string is " + toDecode);
+
+            //Read header until character count is reached
+            //While reading, add the values to a frequency table
+
+            Leaf root = new Leaf();
+            root = root.createTree(decodedFreqTable);
+
+            String end = assignCode(root, toDecode, "", charsToProcess);
+            System.out.println("The decompressed String is: " + end);
 
         }catch(IOException e){
             e.printStackTrace();
         }
     }
 
+    public static String makeByte(String value){
+
+        int missingZeros = value.length()%8;
+        for(int i = 0; i < 8-missingZeros; i++){
+            value = "0" + value;
+        }
+        return value;
+    }
+
+
+    public static String padEndOfFile(String value){
+        int missingZeros = value.length()%8;
+        for(int i = 0; i < 8-missingZeros; i++){
+            value +="0";
+        }
+        return value;
+    }
+
+
     private static void compress(String fileLocation, String fileName) {
         try {
             FileInputStream inFile = new FileInputStream(fileLocation+fileName);
             FileOutputStream outFile = new FileOutputStream(fileLocation + fileName + ".huf");
 
-            String toConvertToByte = "";
-            //Write SecretCode to header
-            for (int i = 0; i < secretCodes.length; i++) {
-                if(secretCodes[i] != null){
-                    toConvertToByte += Integer.toBinaryString(i);
-                    toConvertToByte += secretCodes[i];
+            //String to write
+            String toOuput = "";
+            int characterCount = 0;
+
+            //Write Char + Frequency to header
+            //Format will be somthing like char+Freq+;
+            //Ex: 1100001 1000000 00111011
+            for (int i = 0; i < freqTable.length; i++){
+                //Write char in byte
+                if(freqTable[i] != 0){
+                    //this is the char value in binary
+                    toOuput += makeByte(Integer.toBinaryString(i));
+
+                    //This is the frequency in binary
+                    String testing = Integer.toBinaryString(freqTable[i]);
+                    toOuput += makeByte(testing);
+
+                    //this is the semicolon binary value
+                    toOuput += "00111011";
+                    characterCount++;
                 }
             }
 
+            //add char count at the beginning
+            toOuput = makeByte(Integer.toBinaryString(characterCount)) + toOuput;
 
+            //Write 00000010 for start of text
+            //toOuput += "00000010";
+            //write all chars in file as code and append everything together
             int characters;
-            //add all character code equivalent to the string
+            int charProcessed = 0;
             while(( characters = inFile.read()) != -1) {
-                toConvertToByte += secretCodes[characters];
+                toOuput += secretCodes[characters];
+                charProcessed++;
             }
+            //Write EOF char basically 256 in binary
+            //toOuput += makeByte("100000000");
+            toOuput = makeByte(Integer.toBinaryString(charProcessed)) + toOuput;
 
-            System.out.println("BEFORE ADDING EOF: " + toConvertToByte.length());
+            toOuput = padEndOfFile(toOuput);
 
-            System.out.println("BEFORE ADDING TRAILING ZEROES: " + toConvertToByte.length());
-
-
-            //Add EOF
-            //toConvertToByte += Integer.toBinaryString(256);
-
-            System.out.println("LETS FUCKING TRY THIS " + Integer.toBinaryString((int)'Ā'));
-
-            int missingZeros = toConvertToByte.length()%8;
-            for(int i = 0; i < 8-missingZeros; i++){
-                toConvertToByte += "0";
-            }
-
-            System.out.println("AFTER ADDING TRAILING ZEROES: " + toConvertToByte.length());
-            System.out.println("THIS IS THE FULL STRING: " + toConvertToByte);
-            System.out.println("String is of size: " + toConvertToByte.length());
-            System.out.println("The Loop should execute: " + toConvertToByte.length()/8+ " times" );
-
-            //Amount of times we should cut the string into 8 bytes
-            int iterations = toConvertToByte.length()/8;
-            int counter = 0;
-            for(int j = 0; j < iterations; j++){
-                outFile.write(Byte.parseByte(toConvertToByte.substring(0, 7), 2));
-                counter++;
-                toConvertToByte = toConvertToByte.substring(7);
-            }
-            System.out.println("The Loop executed: " + counter + " times" );
-
+            writeToFile(toOuput, outFile);
 
             outFile.close();
             inFile.close();
 
         }catch(IOException e){
+            e.printStackTrace();
+        }
+    }
+
+    private static void writeToFile(String toOutput, FileOutputStream outFile) {
+        try {
+            int iterations = toOutput.length() / 8;
+            int counter = 0;
+            for (int j = 0; j < iterations; j++) {
+                outFile.write(Integer.parseInt(toOutput.substring(0, 8),2));
+                System.out.println("This is the value that will be written: " + Integer.parseInt(toOutput.substring(0, 8)));
+                counter++;
+                toOutput = toOutput.substring(8);
+            }
+            System.out.println("The Loop executed: " + counter + " times");
+        }catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -135,20 +186,38 @@ public class HuffmanCompression {
             root.getRightLeaf().setLeafCode(root.getLeafCode() + "1");
             if(root.getLeftLeaf().getSymbol() != '\0') {
                 secretCodes[root.getLeftLeaf().getSymbol()] = root.getLeftLeaf().getLeafCode();
-                /*if(root.getLeftLeaf().getPosition() == 256){
-                    secretCodes[256] = "100000000";
-                }*/
             }
             if(root.getRightLeaf().getSymbol() != '\0'){
                 secretCodes[root.getRightLeaf().getSymbol()] = root.getRightLeaf().getLeafCode();
-                /*if(root.getRightLeaf().getPosition() == 256){
-                    secretCodes[256] = "100000000";
-                }*/
             }
             makeSecretCode(root.getRightLeaf());
             root = root.getLeftLeaf();
         }
 
+    }
+
+    private static String assignCode(Leaf root, String codes, String out, int charsToProcess) {
+        if(charsToProcess >= 0){
+            if(root.isNode) {
+                if (codes.charAt(0) == '0') {
+                    assignCode(root.getLeftLeaf(), codes.substring(1), out, charsToProcess--);
+                } else {
+                    assignCode(root.getRightLeaf(), codes.substring(1), out, charsToProcess--);
+                }
+            }
+            else{
+                if(codes.charAt(0) == '0'){
+                    out += root.getSymbol();
+                }
+                else {
+                    out += root.getSymbol();
+                }
+            }
+        }
+        else{
+            return out;
+        }
+        return out;
     }
 
     public static int[] createFreqTable(String directory) {
@@ -161,7 +230,7 @@ public class HuffmanCompression {
                 usedChar[character] += 1;
             }
 
-            usedChar[256] = 1;
+            //usedChar[256] = 1;
             file.close();
         } catch (IOException e) {
             e.printStackTrace();
