@@ -40,36 +40,45 @@ public class HuffmanCompression {
             FileInputStream fi = new FileInputStream(file);
             fi.read(toDecompress);
 
+            RandomAccessFile raf = new RandomAccessFile(file, "r");
+            int testing = raf.readInt();
             //Convert all bytes back to string
             String toDecode = "";
 
+            
+
             int characterCount = Integer.parseInt(toDecompress[0]+"");
+            int characterCountCopy = characterCount;
             int charsToProcess = Integer.parseInt(toDecompress[1]+"");
             int[] decodedFreqTable = new int[256];
 
             int bytesTraversed = 2;
 
             for(int i = bytesTraversed; i < toDecompress.length;i++){
-                toDecode += makeByte(Integer.toBinaryString(toDecompress[i]));
+                int testt = (int)toDecompress[i] & 0xff;
+                toDecode += makeByte(Integer.toBinaryString((int)toDecompress[i] & 0xff) );
             }
 
-            while(characterCount != 0){
+            System.out.println("Decoded string is " + toDecode);
+
+
+            while(charsToProcess != 0){
                 int semicolonLocation = toDecode.indexOf("00111011");
                 String fullString = toDecode.substring(0, semicolonLocation);
-                bytesTraversed += (fullString.length()+16)/8;
+                bytesTraversed += (fullString.length()+8)/8;
 
                 int positionToInsert = Integer.parseInt(fullString.substring(0,8),2);
                 int frequency = Integer.parseInt(fullString.substring(8),2);
                 decodedFreqTable[positionToInsert] = frequency;
-                characterCount--;
+                charsToProcess--;
+                toDecode = toDecode.substring(semicolonLocation+8);
             }
 
             //reset toDecode in order to get only everything after the header
             toDecode = "";
 
-            //Make header with full bits
             for(int i = bytesTraversed; i < toDecompress.length;i++){
-                toDecode += Integer.toBinaryString(toDecompress[i]&0xff);
+                toDecode += Integer.toBinaryString(toDecompress[i] & 0xef);
             }
 
             System.out.println("Decoded string is " + toDecode);
@@ -79,8 +88,11 @@ public class HuffmanCompression {
 
             Leaf root = new Leaf();
             root = root.createTree(decodedFreqTable);
-
-            String end = assignCode(root, toDecode, "", charsToProcess);
+            String end = "";
+            while(characterCountCopy > 0){
+                 end += assignCode(root, toDecode.substring(0, characterCount), '\0', root);
+                characterCountCopy--;
+            }
             System.out.println("The decompressed String is: " + end);
 
         }catch(IOException e){
@@ -90,9 +102,12 @@ public class HuffmanCompression {
 
     public static String makeByte(String value){
 
-        int missingZeros = value.length()%8;
-        for(int i = 0; i < 8-missingZeros; i++){
-            value = "0" + value;
+        if(value.length() != 8) {
+
+            int missingZeros = value.length() % 8;
+            for (int i = 0; i < 8 - missingZeros; i++) {
+                value = "0" + value;
+            }
         }
         return value;
     }
@@ -124,7 +139,6 @@ public class HuffmanCompression {
                 if(freqTable[i] != 0){
                     //this is the char value in binary
                     toOuput += makeByte(Integer.toBinaryString(i));
-
                     //This is the frequency in binary
                     String testing = Integer.toBinaryString(freqTable[i]);
                     toOuput += makeByte(testing);
@@ -167,9 +181,11 @@ public class HuffmanCompression {
         try {
             int iterations = toOutput.length() / 8;
             int counter = 0;
+            System.out.println("BEfore writing: " + toOutput);
+            System.out.println((byte)-128 & 0xff);
+            System.out.println(Integer.toBinaryString(128));
             for (int j = 0; j < iterations; j++) {
-                outFile.write(Integer.parseInt(toOutput.substring(0, 8),2));
-                System.out.println("This is the value that will be written: " + Integer.parseInt(toOutput.substring(0, 8)));
+                outFile.write((byte) Integer.parseInt(toOutput.substring(0, 8), 2) & 0xff);
                 counter++;
                 toOutput = toOutput.substring(8);
             }
@@ -196,29 +212,35 @@ public class HuffmanCompression {
 
     }
 
-    private static String assignCode(Leaf root, String codes, String out, int charsToProcess) {
-        if(charsToProcess >= 0){
-            if(root.isNode) {
-                if (codes.charAt(0) == '0') {
-                    assignCode(root.getLeftLeaf(), codes.substring(1), out, charsToProcess--);
-                } else {
-                    assignCode(root.getRightLeaf(), codes.substring(1), out, charsToProcess--);
-                }
-            }
-            else{
-                if(codes.charAt(0) == '0'){
-                    out += root.getSymbol();
-                }
-                else {
-                    out += root.getSymbol();
-                }
-            }
+    private static char assignCode(Leaf root, String codes, char out, Leaf masterRoot) {
+        int index = 0;
+        if(codes.charAt(index) == '1'){ //Premier bit est 1
+            root = root.getRightLeaf();
         }
         else{
-            return out;
+            root = root.getLeftLeaf();
         }
+        index++;
+        if(!root.isNode()){
+            out = root.getSymbol(); //out.write(currentNode.car);
+            index++;
+            root = masterRoot;
+        }
+
+        /*while(root.isNode() && codes.length() > 0){
+            if(codes.charAt(0) == '0'){
+                assignCode(root.getLeftLeaf(), codes.substring(1), out, masterRoot );
+            }
+            else{
+                assignCode(root.getRightLeaf(), codes.substring(1),out, masterRoot);
+            }
+        }
+        out+=root.getSymbol();
+        assignCode(masterRoot, codes, out, masterRoot);*/
+
         return out;
     }
+
 
     public static int[] createFreqTable(String directory) {
         int[] usedChar = new int[257];
