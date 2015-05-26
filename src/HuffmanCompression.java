@@ -15,6 +15,10 @@ public class HuffmanCompression {
     static String[] secretCodes = new String[257];
     static int[] freqTable;
 
+    static String codes = "";
+    static String end = "";
+
+
     public static void main(String[] args) {
         String fileLocation = "/Users/slus/Desktop/";
         String fileName = "hello.txt";
@@ -45,19 +49,24 @@ public class HuffmanCompression {
             //Convert all bytes back to string
             String toDecode = "";
 
-            
+            int[] positiveValues = new int[toDecompress.length];
+
+            for(int i = 0; i < positiveValues.length; i++){
+                positiveValues[i] = toDecompress[i] & 0xff;
+            }
 
             int characterCount = Integer.parseInt(toDecompress[0]+"");
             int characterCountCopy = characterCount;
             int charsToProcess = Integer.parseInt(toDecompress[1]+"");
+            int charsToProcessCopy = charsToProcess;
             int[] decodedFreqTable = new int[256];
 
             int bytesTraversed = 2;
 
             for(int i = bytesTraversed; i < toDecompress.length;i++){
-                int testt = (int)toDecompress[i] & 0xff;
-                toDecode += makeByte(Integer.toBinaryString((int)toDecompress[i] & 0xff) );
+                toDecode += makeByte(Integer.toBinaryString(positiveValues[i]));
             }
+
 
             System.out.println("Decoded string is " + toDecode);
 
@@ -77,20 +86,26 @@ public class HuffmanCompression {
             //reset toDecode in order to get only everything after the header
             toDecode = "";
 
-            for(int i = bytesTraversed; i < toDecompress.length;i++){
-                toDecode += Integer.toBinaryString(toDecompress[i] & 0xef);
+            int index = 0;
+            while(positiveValues[charsToProcessCopy] != 59){
+                charsToProcessCopy++;
             }
 
-            System.out.println("Decoded string is " + toDecode);
+            for(int i = bytesTraversed; i < toDecompress.length;i++){
+                int value =  positiveValues[i];
+                toDecode += makeByte(Integer.toBinaryString(positiveValues[i]));
+            }
+
+            System.out.println("Decoded Body is " + toDecode);
 
             //Read header until character count is reached
             //While reading, add the values to a frequency table
 
             Leaf root = new Leaf();
             root = root.createTree(decodedFreqTable);
-            String end = "";
+            codes = toDecode;
             while(characterCountCopy > 0){
-                 end += assignCode(root, toDecode.substring(0, characterCount), '\0', root);
+                end += assignCode(root);
                 characterCountCopy--;
             }
             System.out.println("The decompressed String is: " + end);
@@ -157,10 +172,14 @@ public class HuffmanCompression {
             //write all chars in file as code and append everything together
             int characters;
             int charProcessed = 0;
+            String test1 = "";
             while(( characters = inFile.read()) != -1) {
                 toOuput += secretCodes[characters];
+                test1 += secretCodes[characters];
                 charProcessed++;
             }
+
+            System.out.println("This is the body: " + test1);
             //Write EOF char basically 256 in binary
             //toOuput += makeByte("100000000");
             toOuput = makeByte(Integer.toBinaryString(charProcessed)) + toOuput;
@@ -212,33 +231,20 @@ public class HuffmanCompression {
 
     }
 
-    private static char assignCode(Leaf root, String codes, char out, Leaf masterRoot) {
-        int index = 0;
-        if(codes.charAt(index) == '1'){ //Premier bit est 1
-            root = root.getRightLeaf();
-        }
-        else{
-            root = root.getLeftLeaf();
-        }
-        index++;
-        if(!root.isNode()){
-            out = root.getSymbol(); //out.write(currentNode.car);
-            index++;
-            root = masterRoot;
-        }
-
-        /*while(root.isNode() && codes.length() > 0){
-            if(codes.charAt(0) == '0'){
-                assignCode(root.getLeftLeaf(), codes.substring(1), out, masterRoot );
-            }
-            else{
-                assignCode(root.getRightLeaf(), codes.substring(1),out, masterRoot);
+    private static char assignCode(Leaf root) {
+        int toRemove = 0;
+        while(root.isNode()) {
+            if (codes.charAt(toRemove) == '1') {
+                toRemove++;
+                root = root.getRightLeaf();
+            } else {
+                toRemove++;
+                root = root.getLeftLeaf();
             }
         }
-        out+=root.getSymbol();
-        assignCode(masterRoot, codes, out, masterRoot);*/
+        codes = codes.substring(toRemove);
+        return root.getSymbol();
 
-        return out;
     }
 
 
