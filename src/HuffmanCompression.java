@@ -55,9 +55,9 @@ public class HuffmanCompression {
                 positiveValues[i] = toDecompress[i] & 0xff;
             }
 
-            int characterCount = Integer.parseInt(toDecompress[0]+"");
+            int characterCount = Integer.parseInt(positiveValues[0]+"");
             int characterCountCopy = characterCount;
-            int charsToProcess = Integer.parseInt(toDecompress[1]+"");
+            int charsToProcess = Integer.parseInt(positiveValues[1]+"");
             int charsToProcessCopy = charsToProcess;
             int[] decodedFreqTable = new int[256];
 
@@ -109,6 +109,8 @@ public class HuffmanCompression {
                 characterCountCopy--;
             }
             System.out.println("The decompressed String is: " + end);
+
+            toWrite.write(end.getBytes());
 
         }catch(IOException e){
             e.printStackTrace();
@@ -181,8 +183,7 @@ public class HuffmanCompression {
 
             System.out.println("This is the body: " + test1);
             //Write EOF char basically 256 in binary
-            //toOuput += makeByte("100000000");
-            toOuput = makeByte(Integer.toBinaryString(charProcessed)) + toOuput;
+            toOuput = makeByte(Integer.toBinaryString(charProcessed & 0xff)) + toOuput;
 
             toOuput = padEndOfFile(toOuput);
 
